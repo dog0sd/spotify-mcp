@@ -18,7 +18,7 @@ To use this Spotify MCP server, you need to create and configure a Spotify App t
 
 ### 4. Set Redirect URIs
 - In your app page, click **"Edit Settings"**.
-- Under **Redirect URIs**, add the URI(s) your MCP server will use for authentication (e.g., `http://localhost:8080/callback`).
+- Under **Redirect URIs**, add the URI `http://localhost:8821/callback`.
 - Click **"Add"** and then **"Save"**.
 
 ### 5. Use Your Credentials

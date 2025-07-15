@@ -39,6 +39,17 @@ func RegisterAllTools(s *server.MCPServer) {
 	toolListDevices := mcp.NewTool("spotify_list_devices",
 		mcp.WithDescription("List existing user's Spotify devices"),
 	)
+	toolGetCover := mcp.NewTool("spotify_get_cover",
+		mcp.WithDescription("Get the cover image URL for a track, album, or playlist by URI."),
+		mcp.WithString("uri", mcp.Required(), mcp.Description("Spotify URI of the track, album, or playlist")),
+	)
+	toolGetPlaylists := mcp.NewTool("spotify_get_playlists",
+		mcp.WithDescription("Get the list of user's playlists."),
+	)
+	toolGetTrackList := mcp.NewTool("spotify_get_track_list",
+		mcp.WithDescription("Get the list of tracks in an album or playlist by URI."),
+		mcp.WithString("uri", mcp.Required(), mcp.Description("Spotify URI of the album or playlist")),
+	)
 	s.AddTool(toolPlay, play)
 	s.AddTool(toolSearch, search)
 	s.AddTool(toolPause, pause)
@@ -48,4 +59,8 @@ func RegisterAllTools(s *server.MCPServer) {
 	s.AddTool(toolSetVolume, setVolume)
 	s.AddTool(toolListDevices, listDevices)
 	s.AddTool(toolCurrentlyPlaying, currentlyPlaying)
+
+	s.AddTool(toolGetCover, getCover)
+	s.AddTool(toolGetPlaylists, getPlaylists)
+	s.AddTool(toolGetTrackList, getTrackList)
 }

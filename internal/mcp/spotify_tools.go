@@ -86,7 +86,11 @@ func search(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResu
 		}
 	default:
 		for _, track := range searchResult.Tracks.Tracks {
-			result = append(result, fmt.Sprintf("URI: \"%s\", Artist: \"%s\", Song: \"%s\"", track.URI, track.Artists[0], track.Name))
+			artistNames := []string{}
+			for _, a := range track.Artists {
+				artistNames = append(artistNames, a.Name)
+			}
+			result = append(result, fmt.Sprintf("URI: \"%s\", Artist: \"%s\" Song: \"%s\"", track.URI, strings.Join(artistNames, ", "), track.Name))
 		}
 	}
 
@@ -217,3 +221,104 @@ func listDevices(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToo
 	return mcp.NewToolResultText(strings.Join(result, "\n")), nil
 }
 
+// Get the cover image URL for a track or album  by URI
+func getCover(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	client, err := spotify.NewClient(ctx)
+	if err != nil {
+		return mcp.NewToolResultError("error creating spotify client: " + err.Error()), nil
+	}
+	uri, err := request.RequireString("uri")
+	if err != nil || uri == "" {
+		return mcp.NewToolResultError("missing or invalid 'uri' argument"), nil
+	}
+	var images []s.Image
+	switch {
+	case strings.HasPrefix(uri, "spotify:track:"):
+		track, err := client.GetTrack(ctx, s.ID(strings.TrimPrefix(uri, "spotify:track:")))
+		if err != nil {
+			return mcp.NewToolResultError("error getting track: " + err.Error()), nil
+		}
+		images = track.Album.Images
+	case strings.HasPrefix(uri, "spotify:album:"):
+		album, err := client.GetAlbum(ctx, s.ID(strings.TrimPrefix(uri, "spotify:album:")))
+		if err != nil {
+			return mcp.NewToolResultError("error getting album: " + err.Error()), nil
+		}
+		images = album.Images
+	case strings.HasPrefix(uri, "spotify:playlist:"):
+		playlist, err := client.GetPlaylist(ctx, s.ID(strings.TrimPrefix(uri, "spotify:playlist:")))
+		if err != nil {
+			return mcp.NewToolResultError("error getting playlist: " + err.Error()), nil
+		}
+		images = playlist.Images
+	default:
+		return mcp.NewToolResultError("unsupported URI type for cover image"), nil
+	}
+	if len(images) == 0 {
+		return mcp.NewToolResultText("No cover image found."), nil
+	}
+	return mcp.NewToolResultText(images[0].URL), nil
+}
+
+// Get the list of user's playlists
+func getPlaylists(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	client, err := spotify.NewClient(ctx)
+	if err != nil {
+		return mcp.NewToolResultError("error creating spotify client: " + err.Error()), nil
+	}
+	playlists, err := client.CurrentUsersPlaylists(ctx)
+	if err != nil {
+		return mcp.NewToolResultError("error getting playlists: " + err.Error()), nil
+	}
+	if len(playlists.Playlists) == 0 {
+		return mcp.NewToolResultText("No playlists found."), nil
+	}
+	var result []string
+	for _, p := range playlists.Playlists {
+		result = append(result, fmt.Sprintf("Name: %s, ID: %s, Tracks: %d", p.Name, p.ID, p.Tracks.Total))
+	}
+	return mcp.NewToolResultText(strings.Join(result, "\n")), nil
+}
+
+// Get the list of tracks in an album or playlist by URI
+func getTrackList(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	client, err := spotify.NewClient(ctx)
+	if err != nil {
+		return mcp.NewToolResultError("error creating spotify client: " + err.Error()), nil
+	}
+	uri, err := request.RequireString("uri")
+	if err != nil || uri == "" {
+		return mcp.NewToolResultError("missing or invalid 'uri' argument"), nil
+	}
+	var tracks []s.SimpleTrack
+	switch {
+	case strings.HasPrefix(uri, "spotify:album:"):
+		album, err := client.GetAlbum(ctx, s.ID(strings.TrimPrefix(uri, "spotify:album:")))
+		if err != nil {
+			return mcp.NewToolResultError("error getting album: " + err.Error()), nil
+		}
+		tracks = album.Tracks.Tracks
+	case strings.HasPrefix(uri, "spotify:playlist:"):
+		playlist, err := client.GetPlaylist(ctx, s.ID(strings.TrimPrefix(uri, "spotify:playlist:")))
+		if err != nil {
+			return mcp.NewToolResultError("error getting playlist: " + err.Error()), nil
+		}
+		for _, item := range playlist.Tracks.Tracks {
+			tracks = append(tracks, item.Track.SimpleTrack)
+		}
+	default:
+		return mcp.NewToolResultError("unsupported URI type for track list"), nil
+	}
+	if len(tracks) == 0 {
+		return mcp.NewToolResultText("No tracks found."), nil
+	}
+	var result []string
+	for i, t := range tracks {
+		var artistNames []string
+		for _, art := range t.Artists {
+			artistNames = append(artistNames, art.Name)
+		}
+		result = append(result, fmt.Sprintf("%d. %s - %s", i+1, t.Name, strings.Join(artistNames, ", ")))
+	}
+	return mcp.NewToolResultText(strings.Join(result, "\n")), nil
+}
