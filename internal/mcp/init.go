@@ -1,9 +1,11 @@
 package mcptools
 
 import (
+
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
 
 func RegisterAllTools(s *server.MCPServer) {
 	toolPlay := mcp.NewTool("spotify_play",
@@ -17,9 +19,33 @@ func RegisterAllTools(s *server.MCPServer) {
 		mcp.WithDescription("Allows to search track/album/playlist/author on Spotify"),
 		mcp.WithString("query", mcp.Required(), mcp.Description("search query")),
 		mcp.WithString("type", mcp.Description("Search type"), mcp.DefaultString("track"), mcp.Enum("track", "album", "author", "playlist")),
-    )
+	)
+	toolPause := mcp.NewTool("spotify_pause",
+		mcp.WithDescription("Pause playback on Spotify."),
+	)
+	toolNext := mcp.NewTool("spotify_next",
+		mcp.WithDescription("Skip to the next track on Spotify."),
+	)
+	toolPrevious := mcp.NewTool("spotify_previous",
+		mcp.WithDescription("Skip to the previous track on Spotify."),
+	)
+	toolSetVolume := mcp.NewTool("spotify_volume",
+		mcp.WithDescription("Set volume in percents for current Spotify playback."),
+		mcp.WithNumber("volume", mcp.Description("Integer value in percents between 0 and 100")),
+	)
+	toolCurrentlyPlaying := mcp.NewTool("spotify_currently_playing",
+		mcp.WithDescription("Show what currently is playing in Spotify"),
+	)
+	toolListDevices := mcp.NewTool("spotify_list_devices",
+		mcp.WithDescription("List existing user's Spotify devices"),
+	)
 	s.AddTool(toolPlay, play)
-	s.AddTool(toolCurrentUser, play)
 	s.AddTool(toolSearch, search)
+	s.AddTool(toolPause, pause)
+	s.AddTool(toolNext, next)
+	s.AddTool(toolPrevious, previous)
+	s.AddTool(toolCurrentUser, currentUser)
+	s.AddTool(toolSetVolume, setVolume)
+	s.AddTool(toolListDevices, listDevices)
+	s.AddTool(toolCurrentlyPlaying, currentlyPlaying)
 }
-
