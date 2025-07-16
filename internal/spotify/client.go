@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -78,12 +79,13 @@ func GetToken() (*oauth2.Token, error) {
 		return token, nil
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		url := authenticator.AuthURL(state)
 		http.Redirect(w, r, url, http.StatusFound)
 	})
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		if r.FormValue("state") != state {
 			http.Error(w, "state mismatch", http.StatusBadRequest)
 			return
@@ -98,17 +100,21 @@ func GetToken() (*oauth2.Token, error) {
 			http.Error(w, "failure while saving token: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("Authentication completed. Use Ctr+C.")
+		fmt.Println("Authentication completed.")
 		tokenChan <- freshToken
 	})
 
+	server := &http.Server{Addr: ":8821", Handler: mux}
 	go func() {
-		err = http.ListenAndServe(":8821", nil)
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("ListenAndServe(): %v", err)
+		}
 	}()
 	fmt.Println("1. Open http://localhost:8821/ in your browser")
 	fmt.Println("2. Login into your Spotify account")
 
 	token = <-tokenChan
+	server.Shutdown(context.Background())
 	return token, nil
 }
 
