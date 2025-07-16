@@ -32,14 +32,19 @@ func play(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult
 	if err != nil {
 		return nil, fmt.Errorf("error creating spotify client: %v", err)
 	}
-	songURI := request.GetString("uri", "")
-	if songURI != "" {
-		err = client.PlayOpt(ctx, &s.PlayOptions{URIs: []s.URI{s.URI(songURI)}})
+	uri := request.GetString("uri", "")
+	if uri != "" {
+		if strings.HasPrefix(uri, "spotify:playlist:") || strings.HasPrefix(uri, "spotify:album:") {
+			err = client.PlayOpt(ctx, &s.PlayOptions{PlaybackContext: (*s.URI)(&uri)})
+			return mcp.NewToolResultText("done"), err
+		} else {
+			err = client.PlayOpt(ctx, &s.PlayOptions{URIs: []s.URI{s.URI(uri)}})
+		}
 	} else {
 		err = client.Play(ctx)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error playing song: %v", err)
+		return nil, fmt.Errorf("error playing %s: %v", uri, err)
 	}
 	return mcp.NewToolResultText("done"), nil
 }
@@ -312,6 +317,79 @@ func getTrackList(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallTo
 	}
 	return mcp.NewToolResultText(strings.Join(result, "\n")), nil
 }
+
+// Create a new playlist for the current user
+func createPlaylist(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	client, err := spotify.NewClient(ctx)
+	if err != nil {
+		return mcp.NewToolResultError("error creating spotify client: " + err.Error()), nil
+	}
+
+	name, err := request.RequireString("name")
+	if err != nil || name == "" {
+		return mcp.NewToolResultError("missing or invalid 'name' argument"), nil
+	}
+
+	description := request.GetString("description", "")
+	public := request.GetBool("public", false)
+
+	user, err := client.CurrentUser(ctx)
+	if err != nil {
+		return mcp.NewToolResultError("error getting current user: " + err.Error()), nil
+	}
+
+	playlist, err := client.CreatePlaylistForUser(ctx, user.ID, name, description, public, false)
+	if err != nil {
+		return mcp.NewToolResultError("error creating playlist: " + err.Error()), nil
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Playlist created: %s (URI: %s)", playlist.Name, playlist.URI)), nil
+}
+
+// Add tracks to a playlist by playlist URI or ID and track URIs
+func addTracksToPlaylist(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	client, err := spotify.NewClient(ctx)
+	if err != nil {
+		return mcp.NewToolResultError("error creating spotify client: " + err.Error()), nil
+	}
+
+	playlistURI, err := request.RequireString("playlist_uri")
+	if err != nil || playlistURI == "" {
+		return mcp.NewToolResultError("missing or invalid 'playlist_uri' argument"), nil
+	}
+
+	trackURIs, err := request.RequireStringSlice("track_uris")
+	if err != nil {
+		return mcp.NewToolResultError("missing 'track_uris' argument"), nil
+	}
+	if len(trackURIs) == 0 {
+		return mcp.NewToolResultError("no track URIs provided"), nil
+	}
+
+	playlistID := strings.TrimPrefix(playlistURI, "spotify:playlist:")
+
+	_, err = client.AddTracksToPlaylist(ctx, s.ID(playlistID), toSpotifyIDs(trackURIs)...)
+	if err != nil {
+		return mcp.NewToolResultError("error adding tracks to playlist: " + err.Error()), nil
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Added %d tracks to playlist %s", len(trackURIs), playlistURI)), nil
+}
+
+// Helper to convert string URIs to spotify.ID
+func toSpotifyIDs(uris []string) []s.ID {
+	var ids []s.ID
+	for _, uri := range uris {
+		if strings.HasPrefix(uri, "spotify:track:") {
+			ids = append(ids, s.ID(strings.TrimPrefix(uri, "spotify:track:")))
+		} else {
+			ids = append(ids, s.ID(uri))
+		}
+	}
+	return ids
+}
+
+
 
 func joinArtistNames(artists []s.SimpleArtist) string {
 	var names []string
