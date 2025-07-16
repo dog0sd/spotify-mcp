@@ -16,7 +16,8 @@ func main() {
 	if len(os.Args) == 2 && os.Args[1] == "login" {
 		_, err := spotify.GetToken()
 		if err != nil {
-			fmt.Printf("error: %v", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
 		} else {
 			fmt.Println("Token obtained from file.")
 		}

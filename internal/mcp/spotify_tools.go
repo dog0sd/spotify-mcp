@@ -26,7 +26,6 @@ func currentUser(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToo
 	return mcp.NewToolResultText(info), nil
 }
 
-
 // Play a track/playlist/album
 func play(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	client, err := spotify.NewClient(ctx)
@@ -86,11 +85,7 @@ func search(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResu
 		}
 	default:
 		for _, track := range searchResult.Tracks.Tracks {
-			artistNames := []string{}
-			for _, a := range track.Artists {
-				artistNames = append(artistNames, a.Name)
-			}
-			result = append(result, fmt.Sprintf("URI: \"%s\", Artist: \"%s\" Song: \"%s\"", track.URI, strings.Join(artistNames, ", "), track.Name))
+			result = append(result, fmt.Sprintf("URI: \"%s\", Artist: \"%s\" Song: \"%s\"", track.URI, joinArtistNames(track.Artists), track.Name))
 		}
 	}
 
@@ -135,7 +130,6 @@ func previous(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolRe
 	}
 	return mcp.NewToolResultText("done"), nil
 }
-
 
 // Get currently playing track
 func currentlyPlaying(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -198,7 +192,7 @@ func setVolume(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolR
 
 // List available devices
 func listDevices(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	
+
 	client, err := spotify.NewClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError("error creating spotify client: " + err.Error()), nil
@@ -314,11 +308,15 @@ func getTrackList(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallTo
 	}
 	var result []string
 	for i, t := range tracks {
-		var artistNames []string
-		for _, art := range t.Artists {
-			artistNames = append(artistNames, art.Name)
-		}
-		result = append(result, fmt.Sprintf("%d. %s - %s", i+1, t.Name, strings.Join(artistNames, ", ")))
+		result = append(result, fmt.Sprintf("%d. %s - %s", i+1, t.Name, joinArtistNames(t.Artists)))
 	}
 	return mcp.NewToolResultText(strings.Join(result, "\n")), nil
+}
+
+func joinArtistNames(artists []s.SimpleArtist) string {
+	var names []string
+	for _, a := range artists {
+		names = append(names, a.Name)
+	}
+	return strings.Join(names, ", ")
 }

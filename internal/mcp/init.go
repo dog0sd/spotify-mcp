@@ -1,24 +1,16 @@
 package mcptools
 
 import (
-
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
 
 func RegisterAllTools(s *server.MCPServer) {
+	// Playback controls
 	toolPlay := mcp.NewTool("spotify_play",
 		mcp.WithDescription("Allows to play/resume playing the song in Spotify. If song name or artist are omited(they aren't required) last song will be played."),
 		mcp.WithString("uri", mcp.Description("Spotify URI of the track, or album")),
-	)
-	toolCurrentUser := mcp.NewTool("spotify_whoami",
-		mcp.WithDescription("Allows to get information about current Spotify user(like email, display name)"),
-	)
-	toolSearch := mcp.NewTool("spotify_search",
-		mcp.WithDescription("Allows to search track/album/playlist/author on Spotify"),
-		mcp.WithString("query", mcp.Required(), mcp.Description("search query")),
-		mcp.WithString("type", mcp.Description("Search type"), mcp.DefaultString("track"), mcp.Enum("track", "album", "author", "playlist")),
 	)
 	toolPause := mcp.NewTool("spotify_pause",
 		mcp.WithDescription("Pause playback on Spotify."),
@@ -32,6 +24,10 @@ func RegisterAllTools(s *server.MCPServer) {
 	toolSetVolume := mcp.NewTool("spotify_volume",
 		mcp.WithDescription("Set volume in percents for current Spotify playback."),
 		mcp.WithNumber("volume", mcp.Description("Integer value in percents between 0 and 100")),
+	)
+	// Information retrieval
+	toolCurrentUser := mcp.NewTool("spotify_whoami",
+		mcp.WithDescription("Allows to get information about current Spotify user(like email, display name)"),
 	)
 	toolCurrentlyPlaying := mcp.NewTool("spotify_currently_playing",
 		mcp.WithDescription("Show what currently is playing in Spotify"),
@@ -50,6 +46,12 @@ func RegisterAllTools(s *server.MCPServer) {
 		mcp.WithDescription("Get the list of tracks in an album or playlist by URI."),
 		mcp.WithString("uri", mcp.Required(), mcp.Description("Spotify URI of the album or playlist")),
 	)
+	toolSearch := mcp.NewTool("spotify_search",
+		mcp.WithDescription("Allows to search track/album/playlist/author on Spotify"),
+		mcp.WithString("query", mcp.Required(), mcp.Description("search query")),
+		mcp.WithString("type", mcp.Description("Search type"), mcp.DefaultString("track"), mcp.Enum("track", "album", "author", "playlist")),
+	)
+	// Registration
 	s.AddTool(toolPlay, play)
 	s.AddTool(toolSearch, search)
 	s.AddTool(toolPause, pause)
