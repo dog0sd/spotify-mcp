@@ -73,6 +73,9 @@ It exposes a suite of tools for playback, search, and device management, making 
 | `spotify_get_cover`         | Get the cover image URL for a track, album, or playlist by URI | `uri` (required)          |
 | `spotify_get_playlists`     | Get the list of user's playlists                |                           |
 | `spotify_get_track_list`    | Get the list of tracks in an album or playlist by URI | `uri` (required)          |
+| `spotify_create_playlist`    | Create a new playlist for the current user             | `name` (required), `description` (optional), `public` (optional, default: false) |
+| `spotify_add_tracks_to_playlist` | Add tracks to a playlist by playlist URI or ID and track URIs | `playlist_uri` (required), `track_uris` (required, []string) |
+
 
 ---
 

@@ -28,6 +28,11 @@ var (
 			spotifyauth.ScopeUserReadPlaybackState,
 			spotifyauth.ScopeUserReadCurrentlyPlaying,
 			spotifyauth.ScopeUserModifyPlaybackState,
+			spotifyauth.ScopePlaylistModifyPrivate,
+			spotifyauth.ScopePlaylistModifyPublic,
+			spotifyauth.ScopePlaylistReadPrivate,
+			spotifyauth.ScopeUserReadCurrentlyPlaying,
+			spotifyauth.ScopeUserLibraryRead,
 		),
 	)
 	tokenChan = make(chan *oauth2.Token)
